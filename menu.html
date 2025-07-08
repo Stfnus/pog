@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <title>Menu - PogCrunch</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <header>
+        <div class="logo-container">
+            <img src="assets/logo.jpg" class="logo" alt="logo" />
+            <span class="brand-name">PogCrunch</span>
+        </div>
+        <nav>
+            <div class="nav-right">
+                <ul class="nav-links">
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="menu.html">Menu</a></li>
+                    <li><a href="lokasi.html">Lokasi</a></li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <main class="menu-page">
+        <h2>Menu</h2>
+
+        <div class="filter-buttons">
+            <button data-filter="all" class="active">Semua</button>
+            <button data-filter="snack">Snack</button>
+            <button data-filter="minuman">Minuman</button>
+        </div>
+
+        <div class="menu-grid" id="menu-container">
+            <p>Loading menu...</p>
+        </div>
+    </main>
+
+    <!-- Popup -->
+    <div id="popup" class="popup hidden">
+        <div class="popup-content">
+            <span class="close" onclick="closePopup()">×</span>
+            <div class="popup-body">
+                <img id="popup-image" src="" alt="Menu Image" />
+                <div class="popup-info">
+                    <h3 id="popup-title"></h3>
+                    <p class="popup-price" id="popup-price"></p>
+                    <p id="popup-deskripsi"></p>
+                    <a href="#" class="popup-order" id="popup-order" target="_blank">Pesan Sekarang</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-column">
+                <h3>PogCrunch</h3>
+                <p><a href="https://wa.me/6281234567890?text=Saya%20ingin%20pesan%20">Hubungi Kami</a></p>
+                <p><a href="index.html">Tentang Kami</a></p>
+            </div>
+            <div class="footer-column">
+                <h3>Hubungi Kami</h3>
+                <div class="social-icons">
+                    <a href="https://wa.me/6281234567890?text=Saya%20ingin%20pesan%20"><img src="assets/whatsapp.png" alt="WhatsApp" /></a>
+                    <a href="https://www.instagram.com/pogcrunch_/profilecard/?igsh=cDcyYm44cG5iM2l6"><img src="assets/instagram.png" alt="Instagram" /></a>
+                </div>
+                <div class="store-buttons">
+                    <img src="assets/playstore.png" alt="Google Play" />
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const supabaseUrl = 'https://urvbxfsmjatnmprbdjwn.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVydmJ4ZnNtamF0bm1wcmJkanduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE4OTMwOTAsImV4cCI6MjA2NzQ2OTA5MH0.YimkFPcfT09eTofC0Ws2l_-jDi9-wlwCTHezf3Z77Q4'; 
+        const menuContainer = document.getElementById('menu-container');
+
+        async function fetchMenus() {
+            try {
+                const res = await fetch(`${supabaseUrl}/rest/v1/menus?select=id,nama_produk,harga,foto_produk,kategori,deskripsi`, {
+                    headers: {
+                        apikey: supabaseKey,
+                        Authorization: `Bearer ${supabaseKey}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+
+                const data = await res.json();
+                displayMenus(data);
+            } catch (error) {
+                menuContainer.innerHTML = '<p style="color: red;">Gagal memuat menu.</p>';
+                console.error(error);
+            }
+        }
+
+        function displayMenus(menus) {
+            if (!menus.length) {
+                menuContainer.innerHTML = '<p>Tidak ada menu tersedia.</p>';
+                return;
+            }
+
+            menuContainer.innerHTML = '';
+            menus.forEach(menu => {
+                const card = document.createElement('div');
+                card.className = 'menu-card';
+                card.setAttribute('data-category', menu.kategori);
+                card.setAttribute('data-deskripsi', menu.deskripsi);
+
+                card.innerHTML = `
+                    <img src="${menu.foto_produk}" alt="${menu.nama_produk}" />
+                    <h4>${menu.nama_produk}</h4>
+                    <p class="price">Rp ${parseInt(menu.harga).toLocaleString('id-ID')}</p>
+                `;
+
+                card.addEventListener('click', () => {
+                    openPopup(menu.foto_produk, menu.nama_produk, menu.harga, menu.deskripsi);
+                });
+
+                menuContainer.appendChild(card);
+            });
+
+            setupFilter();
+        }
+
+        function setupFilter() {
+            const filterButtons = document.querySelectorAll('.filter-buttons button');
+            const cards = document.querySelectorAll('.menu-card');
+
+            filterButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const filter = button.getAttribute('data-filter');
+                    filterButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+
+                    cards.forEach(card => {
+                        const category = card.getAttribute('data-category');
+                        if (filter === 'all' || filter === category) {
+                            card.style.display = 'block';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+                });
+            });
+        }
+
+        function openPopup(image, title, price, deskripsi) {
+            document.getElementById("popup-image").src = image;
+            document.getElementById("popup-title").textContent = title;
+            document.getElementById("popup-price").textContent = "Rp " + parseInt(price).toLocaleString('id-ID');
+            document.getElementById("popup-deskripsi").textContent = deskripsi;
+            document.getElementById("popup-order").href = "https://wa.me/6281234567890?text=Halo%2C%20saya%20ingin%20memesan%20menu%20" + encodeURIComponent(title);
+            document.getElementById("popup").classList.remove("hidden");
+        }
+
+        function closePopup() {
+            document.getElementById("popup").classList.add("hidden");
+        }
+
+        fetchMenus();
+    </script>
+</body>
+</html>
